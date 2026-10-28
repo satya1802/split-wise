@@ -2,6 +2,536 @@
 openapi: 3.1.0
 info:
   title: split wise
-  version: architecture-v0
+  version: architecture-v2
   description: Designed API from the approved architecture (not extracted from code).
-paths: {}
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate with email and password; generic message on failure.
+      description: Authenticate with email and password; generic message on failure.
+      operationId: post_auth_login
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{email, password}'
+      responses:
+        '200':
+          description: '{user, token}'
+  /auth/logout:
+    post:
+      summary: End the current session.
+      description: End the current session.
+      operationId: post_auth_logout
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{}'
+      responses:
+        '200':
+          description: '204'
+      security:
+      - bearerAuth: []
+  /auth/register:
+    post:
+      summary: Create an account with unique email, name and valid password, then
+        sign in.
+      description: Create an account with unique email, name and valid password, then
+        sign in.
+      operationId: post_auth_register
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{email, name, password}'
+      responses:
+        '200':
+          description: '{user, token}'
+  /groups:
+    get:
+      summary: List groups the user belongs to.
+      description: List groups the user belongs to.
+      operationId: get_groups
+      parameters: []
+      responses:
+        '200':
+          description: '[{group}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create a named persistent group; creator becomes a member. Rejects
+        empty name.
+      description: Create a named persistent group; creator becomes a member. Rejects
+        empty name.
+      operationId: post_groups
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name}'
+      responses:
+        '200':
+          description: '{group}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/balances:
+    get:
+      summary: Net per-member balances plus the minimised settle-up suggestion.
+      description: Net per-member balances plus the minimised settle-up suggestion.
+      operationId: get_groups_group_id_balances
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{balances[], suggested_settlements[], settled}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/expenses:
+    get:
+      summary: Group expense and activity history in reverse-chronological order,
+        with empty state.
+      description: Group expense and activity history in reverse-chronological order,
+        with empty state.
+      operationId: get_groups_group_id_expenses
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '[{entry}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Log an expense with amount, payer, description, date, category, optional
+        note, included members and split method; valida
+      description: Log an expense with amount, payer, description, date, category,
+        optional note, included members and split method; validates shares sum to
+        total.
+      operationId: post_groups_group_id_expenses
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{amount, payer_member_id, description, date, category,
+                note?, split_method, splits[]}'
+      responses:
+        '200':
+          description: '{expense}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/expenses/{expense_id}:
+    patch:
+      summary: Edit an expense (including note and split); re-validates sums.
+      description: Edit an expense (including note and split); re-validates sums.
+      operationId: patch_groups_group_id_expenses_expense_id
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: expense_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{...fields}'
+      responses:
+        '200':
+          description: '{expense}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/expenses/{expense_id}/comments:
+    get:
+      summary: List comments in chronological order.
+      description: List comments in chronological order.
+      operationId: get_groups_group_id_expenses_expense_id_comments
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: expense_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '[{comment}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Post a comment shown with author name and timestamp.
+      description: Post a comment shown with author name and timestamp.
+      operationId: post_groups_group_id_expenses_expense_id_comments
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: expense_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{body}'
+      responses:
+        '200':
+          description: '{comment}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/members:
+    get:
+      summary: List members with name and registered/placeholder flag.
+      description: List members with name and registered/placeholder flag.
+      operationId: get_groups_group_id_members
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '[{member}]'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/members/invite:
+    post:
+      summary: Invite by email; add if registered else email a sign-up prompt. Sends
+        invitation email.
+      description: Invite by email; add if registered else email a sign-up prompt.
+        Sends invitation email.
+      operationId: post_groups_group_id_members_invite
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{email}'
+      responses:
+        '200':
+          description: '{member|invitation}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/members/placeholder:
+    post:
+      summary: Add a name-only placeholder member; no email sent.
+      description: Add a name-only placeholder member; no email sent.
+      operationId: post_groups_group_id_members_placeholder
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name}'
+      responses:
+        '200':
+          description: '{member}'
+      security:
+      - bearerAuth: []
+  /groups/{group_id}/settlements:
+    post:
+      summary: Record an informal settlement (payer, recipient, amount, date); updates
+        balances. Rejects non-positive amount.
+      description: Record an informal settlement (payer, recipient, amount, date);
+        updates balances. Rejects non-positive amount.
+      operationId: post_groups_group_id_settlements
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{payer_member_id, recipient_member_id, amount, date}'
+      responses:
+        '200':
+          description: '{settlement}'
+      security:
+      - bearerAuth: []
+  /me/dashboard:
+    get:
+      summary: Overall 'you owe / you are owed' aggregated across all the user's groups.
+      description: Overall 'you owe / you are owed' aggregated across all the user's
+        groups.
+      operationId: get_me_dashboard
+      parameters: []
+      responses:
+        '200':
+          description: '{you_owe, you_are_owed, per_group[]}'
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    users:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        password_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - email
+      - name
+      - password_hash
+      - created_at
+    groups:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - created_by
+      - created_at
+    group_members:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        is_placeholder:
+          type: boolean
+        joined_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - group_id
+      - display_name
+      - is_placeholder
+      - joined_at
+    group_invitations:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        invited_user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - group_id
+      - email
+      - status
+      - created_at
+    expenses:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        payer_member_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        description:
+          type: string
+        expense_date:
+          type: string
+          format: date
+        category:
+          type: string
+        note:
+          type: string
+        split_method:
+          type: string
+        receipt_url:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - group_id
+      - payer_member_id
+      - amount
+      - description
+      - expense_date
+      - category
+      - split_method
+      - created_by
+      - created_at
+    expense_splits:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        expense_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - expense_id
+      - member_id
+      - amount
+      - created_at
+    settlements:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        payer_member_id:
+          type: string
+          format: uuid
+        recipient_member_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        settled_on:
+          type: string
+          format: date
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - group_id
+      - payer_member_id
+      - recipient_member_id
+      - amount
+      - settled_on
+      - created_by
+      - created_at
+    comments:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        expense_id:
+          type: string
+          format: uuid
+        author_user_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - expense_id
+      - author_user_id
+      - body
+      - created_at
